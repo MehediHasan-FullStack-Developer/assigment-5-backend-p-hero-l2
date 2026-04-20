@@ -9,6 +9,7 @@ interface IEnvConfig {
   DATABASE_URL: string;
   PORT: string;
   BETTER_AUTH_SECRET: string;
+  BETTER_AUTH_BASE_URL: string;
   NODE_ENV: string;
   USER_EMAIL: string;
   USER_PASS: string;
@@ -28,6 +29,7 @@ const validateEnv = [
   "DATABASE_URL",
   "PORT",
   "BETTER_AUTH_SECRET",
+  "BETTER_AUTH_BASE_URL",
   "NODE_ENV",
   "USER_EMAIL",
   "USER_PASS",
@@ -66,6 +68,7 @@ const envConfig = (): IEnvConfig => ({
   CLIENT_URL: process.env.CLIENT_URL as string,
   CLIENT_ID: process.env.CLIENT_ID as string,
   CLIENT_SECRET: process.env.CLIENT_SECRET as string,
+  BETTER_AUTH_BASE_URL: process.env.BETTER_AUTH_BASE_URL as string,
 });
 
 export const env = envConfig();

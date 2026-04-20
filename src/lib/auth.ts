@@ -12,7 +12,9 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
-  baseURL: env.CLIENT_URL,
+  // baseURL: env.CLIENT_URL,
+  // baseURL: "http://localhost:5000",
+  baseURL: env.BETTER_AUTH_BASE_URL,
   trustedOrigins: [env.CLIENT_URL, "http://localhost:3000"],
 
   plugins: [
@@ -70,26 +72,26 @@ export const auth = betterAuth({
   advanced: {
     cookiePrefix: "better-auth",
     useSecureCookies: true,
-    cookies: {
-      state: {
-        name: "session_token",
-        attributes: {
-          sameSite: "none",
-          secure: true,
-          httpOnly: true,
-          path: "/",
-        },
-      },
-      session_token: {
-        name: "session_token",
-        attributes: {
-          sameSite: "none",
-          secure: true,
-          httpOnly: true,
-          path: "/",
-        },
-      },
-    },
+    // cookies: {
+    //   state: {
+    //     name: "session_token",
+    //     attributes: {
+    //       sameSite: "none",
+    //       secure: true,
+    //       httpOnly: true,
+    //       path: "/",
+    //     },
+    //   },
+    //   session_token: {
+    //     name: "session_token",
+    //     attributes: {
+    //       sameSite: "none",
+    //       secure: true,
+    //       httpOnly: true,
+    //       path: "/",
+    //     },
+    //   },
+    // },
   },
 
   socialProviders: {

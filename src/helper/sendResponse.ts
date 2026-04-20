@@ -20,6 +20,8 @@ export const sendResponse = <T>(
       maxAge: 24 * 60 * 60 * 1000,
       secure: true,
       sameSite: env.NODE_ENV ? "none" : "lax",
+      // secure: false,
+      // sameSite: "lax",
     });
   }
 
@@ -29,6 +31,8 @@ export const sendResponse = <T>(
       maxAge: 7 * 24 * 60 * 60 * 1000,
       secure: true,
       sameSite: env.NODE_ENV ? "none" : "lax",
+      // secure: false,
+      // sameSite: "lax",
     });
   }
 
@@ -38,6 +42,8 @@ export const sendResponse = <T>(
       maxAge: 24 * 60 * 60 * 1000,
       secure: true,
       sameSite: env.NODE_ENV ? "none" : "lax",
+      // secure: false,
+      // sameSite: "lax",
     });
   }
 

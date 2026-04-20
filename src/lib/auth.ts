@@ -3,7 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { bearer, emailOTP, oAuthProxy } from "better-auth/plugins";
 import { sendMail } from "../helper/sendMail";
-import { Role, UserStatus } from "../generated/prisma";
+import { UserRole, UserStatus } from "../generated/prisma";
 import { emailMessage, forgotMessage } from "../helper/mailText";
 import { env } from "../config/envConfig";
 
@@ -13,7 +13,9 @@ export const auth = betterAuth({
   }),
 
   baseURL: env.CLIENT_URL,
+  // baseURL: "http://localhost:5000",
   trustedOrigins: [env.CLIENT_URL, "http://localhost:3000"],
+  // trustedOrigins: ["http://localhost:3000"],
 
   plugins: [
     bearer(),
@@ -50,7 +52,7 @@ export const auth = betterAuth({
       role: {
         type: "string",
         required: true,
-        defaultValue: Role.USER,
+        defaultValue: UserRole.USER,
       },
 
       status: {
@@ -69,13 +71,24 @@ export const auth = betterAuth({
 
   advanced: {
     cookiePrefix: "better-auth",
-    useSecureCookies: true,
+    useSecureCookies: false,
     cookies: {
+      state: {
+        name: "session_token",
+        attributes: {
+          sameSite: "none",
+          secure: true,
+          httpOnly: true,
+          path: "/",
+        },
+      },
       session_token: {
         name: "session_token",
         attributes: {
           sameSite: "none",
           secure: true,
+          // sameSite: "lax",
+          // secure: false,
           httpOnly: true,
           path: "/",
         },

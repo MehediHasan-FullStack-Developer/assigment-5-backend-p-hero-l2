@@ -4,7 +4,7 @@ enum UserStatus {
     SUSPEND
 }
 
-enum Role {
+enum UserRole {
     USER
     ADMIN
     CREATOR

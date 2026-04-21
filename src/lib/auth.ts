@@ -73,24 +73,24 @@ export const auth = betterAuth({
     cookiePrefix: "better-auth",
     crossSubdomainCookie: true,
     useSecureCookies: true,
-    cookies: {
-      state: {
-        attributes: {
-          sameSite: "none",
-          secure: true,
-          httpOnly: true,
-          path: "/",
-        },
-      },
-      session_token: {
-        attributes: {
-          sameSite: "none",
-          secure: true,
-          httpOnly: true,
-          path: "/",
-        },
-      },
-    },
+    // cookies: {
+    // state: {
+    //   attributes: {
+    //     sameSite: "none",
+    //     secure: true,
+    //     httpOnly: true,
+    //     path: "/",
+    //   },
+    // },
+    // session_token: {
+    //   attributes: {
+    //     sameSite: "none",
+    //     secure: true,
+    //     httpOnly: true,
+    //     path: "/",
+    //   },
+    // },
+    // },
   },
 
   socialProviders: {

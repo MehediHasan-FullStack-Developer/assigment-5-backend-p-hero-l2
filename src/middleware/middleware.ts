@@ -21,6 +21,7 @@ export const isAuthenticated = async (
       req.cookies["better-auth.session_data"] ||
       req.cookies["better-auth.session_token"] ||
       req.cookies["__Secure-better-auth.session_token"] ||
+      req.cookies["__Secure-session_token"] ||
       req.cookies["__Secure-better-auth.session_data"] ||
       // req.cookies["__Secure-better-auth.session_data"] ||
       req.cookies["session_token"];

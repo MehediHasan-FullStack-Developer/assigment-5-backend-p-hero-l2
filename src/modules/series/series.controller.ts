@@ -111,12 +111,7 @@ export const uploadEpisode = TryCatch(async (req, res, next) => {
 
   const result = await createEpisode(payload, file);
 
-  sendResponse(
-    res,
-    200,
-    "Episode upload functionality will be implemented in the future",
-    result,
-  );
+  sendResponse(res, 200, "Episode published", result);
 });
 
 export const updateEpisode = TryCatch(async (req, res, next) => {

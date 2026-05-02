@@ -89,10 +89,6 @@ export const updateChannelService = async (
     throw new ErrorHandler("Channel name already exist", 400);
   }
 
-  // if (isChannelExist.image) {
-  //   await deleteCloudinaryImage(isChannelExist.image);
-  // }
-
   let imageUrl = isChannelExist.image;
 
   if (file) {

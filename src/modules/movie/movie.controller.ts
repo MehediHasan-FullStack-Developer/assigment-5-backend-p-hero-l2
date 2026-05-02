@@ -1,11 +1,14 @@
 //admin
 
+import { env } from "../../config/envConfig";
 import { Prisma } from "../../generated/prisma";
 import { sendResponse } from "../../helper/sendResponse";
 import { prisma } from "../../lib/prisma";
 import { IMoviePayload } from "../../types/interface/movie/interface.movie";
 import { ErrorHandler } from "../../utils/errorHandler";
 import { TryCatch } from "../../utils/TryCatch";
+import { GoogleGenAI } from "@google/genai";
+
 import {
   chennelService,
   createCategory,
@@ -169,9 +172,7 @@ export const allMovies = TryCatch(async (req, res) => {
 
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
-
   const skip = (page - 1) * limit;
-  const take = limit;
 
   const where: Prisma.MediaWhereInput = {
     AND: [],
@@ -182,36 +183,63 @@ export const allMovies = TryCatch(async (req, res) => {
       OR: [
         { title: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
-        { cast: { hasSome: [search] } },
-        { director: { contains: search, mode: "insensitive" } },
         { genre: { contains: search, mode: "insensitive" } },
       ],
     });
   }
 
   if (category && category !== "All") {
-    (where.AND as any).push({
-      genre: { equals: category },
-    });
+    (where.AND as any).push({ genre: { equals: category } });
   }
 
   const [movies, totalMovies] = await Promise.all([
     prisma.media.findMany({
       where,
       skip,
-      take,
+      take: limit,
       orderBy: { createdAt: "desc" },
     }),
     prisma.media.count({ where }),
   ]);
 
+  let aiSuggestions: string[] = [];
+
+  if (search && page === 1 && movies.length > 0) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+
+      const movieTitles = movies.map((m) => m.title).join(", ");
+
+      const systemInstruction = `
+        You are a movie expert. Based on these movies found in our database: [${movieTitles}], 
+        and the user search query: "${search}", 
+        provide all similar movie titles or trending related topics.
+        Return ONLY a plain JSON array of strings.
+      `;
+
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          { role: "user", parts: [{ text: systemInstruction }] },
+          { role: "user", parts: [{ text: `User Question: ${search}` }] },
+        ],
+      });
+      const text = result.text as string;
+      const cleanedText = text.replace(/```json|```/g, "").trim();
+      aiSuggestions = JSON.parse(cleanedText);
+    } catch (error) {
+      console.error("AI Suggestion Error:", error);
+      aiSuggestions = [];
+    }
+  }
+
   sendResponse(res, 200, "Movies fetched successfully", {
     movies,
+    aiSuggestions,
     pagination: {
       totalMovies,
-      totalPages: Math.ceil(totalMovies / take),
+      totalPages: Math.ceil(totalMovies / limit),
       currentPage: page,
-      limit: take,
     },
   });
 });

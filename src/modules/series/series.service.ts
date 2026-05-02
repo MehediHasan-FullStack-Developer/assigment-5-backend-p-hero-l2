@@ -1,8 +1,10 @@
 import { deleteCloudinaryImage } from "../../config/cloudinary";
+import { env } from "../../config/envConfig";
 import { prisma } from "../../lib/prisma";
 import { ISeriesPayload } from "../../types/interface/movie/interface.series";
 import { ErrorHandler } from "../../utils/errorHandler";
 import { season } from "./series.controller";
+import { GoogleGenAI } from "@google/genai";
 
 export const createSeriesSevice = async (
   payload: ISeriesPayload,
@@ -158,15 +160,96 @@ export const deleteSeriesService = async (id: string, userId: string) => {
   return result;
 };
 
+// export const getAllSeriesService = async (filters: any) => {
+//   const { searchTerm, category, page = 1, limit = 5 } = filters;
+
+//   const skip = (Number(page) - 1) * Number(limit);
+//   const take = Number(limit);
+
+//   const where: any = {
+//     AND: [],
+//   };
+
+//   if (searchTerm && searchTerm.trim() !== "") {
+//     where.OR = [
+//       { title: { contains: searchTerm, mode: "insensitive" } },
+//       { description: { contains: searchTerm, mode: "insensitive" } },
+//       { cast: { hasSome: [searchTerm] } },
+//     ];
+//   }
+
+//   if (category && category !== "All") {
+//     (where.AND as any).push({
+//       genre: { equals: category },
+//     });
+//   }
+
+//   const [result, total] = await Promise.all([
+//     prisma.series.findMany({
+//       where,
+//       skip,
+//       take,
+//       include: {
+//         seasons: {
+//           orderBy: { seasonNumber: "asc" },
+//           include: {
+//             episodes: {
+//               orderBy: { episodeNumber: "asc" },
+//               select: {
+//                 id: true,
+//                 title: true,
+//                 episodeNumber: true,
+//                 videoUrl: true,
+//                 duration: true,
+//               },
+//             },
+//           },
+//         },
+//         user: { select: { name: true } },
+//         reviews: {
+//           where: { parentId: null },
+//           select: { rating: true },
+//         },
+//       },
+//       orderBy: { createdAt: "desc" },
+//     }),
+//     prisma.series.count({ where }),
+//   ]);
+
+//   const seriesWithRating = result.map((series) => {
+//     const reviews = series.reviews || [];
+//     const totalReviews = reviews.length;
+
+//     const sumRating = reviews.reduce((acc, rev) => acc + (rev.rating || 0), 0);
+//     const averageRating =
+//       totalReviews > 0 ? parseFloat((sumRating / totalReviews).toFixed(1)) : 0;
+
+//     const { reviews: _, ...seriesData } = series;
+
+//     return {
+//       ...seriesData,
+//       averageRating,
+//       totalReviews,
+//     };
+//   });
+
+//   return {
+//     meta: {
+//       page: Number(page),
+//       limit: Number(limit),
+//       total,
+//       totalPage: Math.ceil(total / take),
+//     },
+//     data: seriesWithRating,
+//   };
+// };
+
 export const getAllSeriesService = async (filters: any) => {
   const { searchTerm, category, page = 1, limit = 5 } = filters;
-
   const skip = (Number(page) - 1) * Number(limit);
   const take = Number(limit);
 
-  const where: any = {
-    AND: [],
-  };
+  const where: any = { AND: [] };
 
   if (searchTerm && searchTerm.trim() !== "") {
     where.OR = [
@@ -177,9 +260,7 @@ export const getAllSeriesService = async (filters: any) => {
   }
 
   if (category && category !== "All") {
-    (where.AND as any).push({
-      genre: { equals: category },
-    });
+    where.AND.push({ genre: { equals: category } });
   }
 
   const [result, total] = await Promise.all([
@@ -190,45 +271,46 @@ export const getAllSeriesService = async (filters: any) => {
       include: {
         seasons: {
           orderBy: { seasonNumber: "asc" },
-          include: {
-            episodes: {
-              orderBy: { episodeNumber: "asc" },
-              select: {
-                id: true,
-                title: true,
-                episodeNumber: true,
-                videoUrl: true,
-                duration: true,
-              },
-            },
-          },
+          include: { episodes: { orderBy: { episodeNumber: "asc" } } },
         },
         user: { select: { name: true } },
-        reviews: {
-          where: { parentId: null },
-          select: { rating: true },
-        },
+        reviews: { where: { parentId: null }, select: { rating: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
     prisma.series.count({ where }),
   ]);
 
+  let aiSuggestions: string[] = [];
+  if (searchTerm && result.length > 0) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+
+      const seriesTitles = result.map((s) => s.title).join(", ");
+      const prompt = `You are a TV show expert. Based on these series: [${seriesTitles}] and user search: "${searchTerm}", suggest 5 similar trending TV shows. Return ONLY a JSON array of strings.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          { role: "user", parts: [{ text: prompt }] },
+          { role: "user", parts: [{ text: `User Question: ${searchTerm}` }] },
+        ],
+      });
+      const text = response.text as string;
+      aiSuggestions = JSON.parse(text.replace(/```json|```/g, "").trim());
+    } catch (error) {
+      aiSuggestions = [];
+    }
+  }
+
   const seriesWithRating = result.map((series) => {
     const reviews = series.reviews || [];
     const totalReviews = reviews.length;
-
     const sumRating = reviews.reduce((acc, rev) => acc + (rev.rating || 0), 0);
     const averageRating =
       totalReviews > 0 ? parseFloat((sumRating / totalReviews).toFixed(1)) : 0;
-
     const { reviews: _, ...seriesData } = series;
-
-    return {
-      ...seriesData,
-      averageRating,
-      totalReviews,
-    };
+    return { ...seriesData, averageRating, totalReviews };
   });
 
   return {
@@ -239,6 +321,7 @@ export const getAllSeriesService = async (filters: any) => {
       totalPage: Math.ceil(total / take),
     },
     data: seriesWithRating,
+    aiSuggestions,
   };
 };
 

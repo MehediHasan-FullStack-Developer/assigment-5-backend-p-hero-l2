@@ -23,6 +23,7 @@ interface IEnvConfig {
   CLIENT_URL: string;
   CLIENT_ID: string;
   CLIENT_SECRET: string;
+  GEMINI_API_KEY: string;
 }
 
 const validateEnv = [
@@ -43,6 +44,7 @@ const validateEnv = [
   "CLIENT_URL",
   "CLIENT_ID",
   "CLIENT_SECRET",
+  "GEMINI_API_KEY",
 ] as const;
 
 validateEnv.forEach((envVar) => {
@@ -69,6 +71,7 @@ const envConfig = (): IEnvConfig => ({
   CLIENT_ID: process.env.CLIENT_ID as string,
   CLIENT_SECRET: process.env.CLIENT_SECRET as string,
   BETTER_AUTH_BASE_URL: process.env.BETTER_AUTH_BASE_URL as string,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY as string,
 });
 
 export const env = envConfig();

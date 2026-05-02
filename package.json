@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-     "dev": "tsx watch src/server.ts",
-     "seed:admin": "tsx src/seed/seedAdmin.ts",
+    "dev": "tsx watch src/server.ts",
+    "seed:admin": "tsx src/seed/seedAdmin.ts",
     "build:tsup": "tsup",
     "start": "node dist/server.js",
     "generate": "prisma generate",
@@ -31,6 +31,8 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@google/genai": "^1.51.0",
+    "@google/generative-ai": "^0.24.1",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "@types/express": "^5.0.6",

@@ -13,6 +13,7 @@ import {
   watchLetter,
   watchLetterHubs,
   deleteWatchLeter,
+  chatBot,
 } from "./user.controller";
 import { authorizeRoles, isAuthenticated } from "../../middleware/middleware";
 
@@ -60,5 +61,6 @@ router
 router.route("/watch-letter").post(isAuthenticated, watchLetter);
 router.route("/watch-letter-hubs").get(isAuthenticated, watchLetterHubs);
 router.route("/delete-watch-hub").delete(isAuthenticated, deleteWatchLeter);
+router.route("/chat-bot").post(chatBot);
 
 export const userRouter = router;

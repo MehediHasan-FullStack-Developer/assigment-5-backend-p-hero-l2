@@ -1,5 +1,7 @@
 import { sendResponse } from "../../helper/sendResponse";
 import { TryCatch } from "../../utils/TryCatch";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import {
   getAdminDashboardService,
   getProviderDashboardService,
@@ -15,6 +17,9 @@ import {
   getWatchLetterHubs,
   getDeleteService,
 } from "./user.service";
+import { env } from "../../config/envConfig";
+import { ErrorHandler } from "../../utils/errorHandler";
+import { prisma } from "../../lib/prisma";
 
 export const getAdminDashboardData = TryCatch(async (req, res, next) => {
   const result = await getAdminDashboardService();
@@ -123,4 +128,96 @@ export const deleteWatchLeter = TryCatch(async (req, res, next) => {
   const id = req.query?.id as string;
   const result = await getDeleteService(userId, id);
   sendResponse(res, 201, "Watch Unsaved", result);
+});
+
+
+export const chatBot = TryCatch(async (req, res, next) => {
+  const { prompt } = req.body;
+  const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+
+  const [
+    topMedia,
+    topSeries,
+    latestReviews,
+    actualPurchases,
+    categories,
+    recentPayments,
+  ] = await Promise.all([
+    prisma.media.findMany({
+      // take: 5,
+      orderBy: { purchases: { _count: "desc" } },
+      include: { _count: { select: { purchases: true } } },
+    }),
+    prisma.series.findMany({
+      orderBy: [{ purchases: { _count: "desc" } }, { createdAt: "desc" }],
+      include: {
+        seasons: { include: { _count: { select: { episodes: true } } } },
+        _count: { select: { purchases: true } },
+      },
+    }),
+    prisma.review.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { media: true, series: true },
+    }),
+    prisma.purchase.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        media: { select: { title: true } },
+        series: { select: { title: true } },
+        user: { select: { name: true } },
+      },
+    }),
+    prisma.categories.findMany({ select: { name: true } }),
+    prisma.payment.findMany({
+      where: { status: "COMPLETED" },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  const dbContext = {
+    topMovies: topMedia.map((m) => `${m.title} (Sales: ${m._count.purchases})`),
+    topSeries: topSeries.map((s) => {
+      const episodes = s.seasons
+        .map((sn) => `S${sn.seasonNumber}: ${sn._count.episodes} eps`)
+        .join(", ");
+      return `${s.title} (Sales: ${s._count.purchases}) - ${episodes}`;
+    }),
+    purchaseHistory: actualPurchases.map(
+      (p) =>
+        `${p.user?.name || "Customer"} recently bought ${p.media?.title || p.series?.title || "an item"}`,
+    ),
+    genres: categories.map((c) => c.name),
+    feedback: latestReviews.map(
+      (r) => `Review on ${r.media?.title || r.series?.title}: ${r.content}`,
+    ),
+  };
+
+  const systemInstruction = `
+    You are an expert assistant for a professional Cinema Portal.
+    
+    Database Context:
+    - MOVIES: ${JSON.stringify(dbContext.topMovies)}
+    - SERIES: ${JSON.stringify(dbContext.topSeries)}
+    - RECENT PURCHASES: ${JSON.stringify(dbContext.purchaseHistory)}
+    - GENRES: ${JSON.stringify(dbContext.genres)}
+    - REVIEWS: ${JSON.stringify(dbContext.feedback)}
+
+    Instructions:
+    - Use the database context above to answer user questions accurately.
+    - If the answer isn't in the database, use your cinematic knowledge.
+    - Be friendly, concise, and helpful.
+  `;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: [
+      { role: "user", parts: [{ text: systemInstruction }] },
+      { role: "user", parts: [{ text: `User Question: ${prompt}` }] },
+    ],
+  });
+
+  res.status(200).json({
+    success: true,
+    message: result.text,
+  });
 });

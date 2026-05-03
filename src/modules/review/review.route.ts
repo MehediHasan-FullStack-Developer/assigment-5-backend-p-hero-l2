@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { isAuthenticated, authorizeRoles } from "../../middleware/middleware";
 import {
+  allMoviesAndSeriesReviews,
   allReviewForAdmin,
   createReview,
   deleteReview,
@@ -26,5 +27,6 @@ router
   .patch(isAuthenticated, authorizeRoles("ADMIN"), updateReviewStatus);
 
 router.route("/my-reviews").get(isAuthenticated, myReviews);
+router.route("/testimonial-reviews").get(allMoviesAndSeriesReviews);
 
 export const reviewRouter = router;

@@ -7,6 +7,7 @@ import {
   getAllReviewsForAdmin,
   updateReviewStatusService,
   myReviewsService,
+  getAllMoviewAndSeriesReviewService,
 } from "./review.service";
 
 export const createReview = TryCatch(async (req, res, next) => {
@@ -44,5 +45,10 @@ export const updateReviewStatus = TryCatch(async (req, res, next) => {
 export const myReviews = TryCatch(async (req, res, next) => {
   const userId = req.user?.id as string;
   const result = await myReviewsService(userId);
+  sendResponse(res, 200, "Reviews fetched successfully", result);
+});
+
+export const allMoviesAndSeriesReviews = TryCatch(async (req, res, next) => {
+  const result = await getAllMoviewAndSeriesReviewService();
   sendResponse(res, 200, "Reviews fetched successfully", result);
 });

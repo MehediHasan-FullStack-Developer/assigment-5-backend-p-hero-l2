@@ -123,3 +123,14 @@ export const myReviewsService = async (userId: string) => {
   });
   return reviews;
 };
+
+export const getAllMoviewAndSeriesReviewService = async () => {
+  const result = await prisma.review.findMany({
+    include: {
+      media: { select: { title: true } },
+      series: { select: { title: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  return result;
+};

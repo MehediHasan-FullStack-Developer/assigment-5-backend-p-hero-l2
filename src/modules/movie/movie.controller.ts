@@ -167,11 +167,15 @@ export const myMovies = TryCatch(async (req, res) => {
 export const allMovies = TryCatch(async (req, res) => {
   const search =
     typeof req.query.search === "string" ? req.query.search : undefined;
+
   const category =
     typeof req.query.category === "string" ? req.query.category : undefined;
 
+  const sort =
+    typeof req.query.sort === "string" ? req.query.sort : "price_low_to_high";
+
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const limit = Number(req.query.limit) || 12;
   const skip = (page - 1) * limit;
 
   const where: Prisma.MediaWhereInput = {
@@ -181,15 +185,50 @@ export const allMovies = TryCatch(async (req, res) => {
   if (search) {
     (where.AND as any).push({
       OR: [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { genre: { contains: search, mode: "insensitive" } },
+        {
+          title: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          genre: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
       ],
     });
   }
 
   if (category && category !== "All") {
-    (where.AND as any).push({ genre: { equals: category } });
+    (where.AND as any).push({
+      genre: {
+        equals: category,
+      },
+    });
+  }
+
+  let orderBy: Prisma.MediaOrderByWithRelationInput = {
+    price: "asc",
+  };
+
+  if (sort === "price_high_to_low") {
+    orderBy = {
+      price: "desc",
+    };
+  }
+
+  if (sort === "latest") {
+    orderBy = {
+      createdAt: "desc",
+    };
   }
 
   const [movies, totalMovies] = await Promise.all([
@@ -197,38 +236,60 @@ export const allMovies = TryCatch(async (req, res) => {
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: "desc" },
+      orderBy,
     }),
-    prisma.media.count({ where }),
+
+    prisma.media.count({
+      where,
+    }),
   ]);
 
   let aiSuggestions: string[] = [];
 
   if (search && page === 1 && movies.length > 0) {
     try {
-      const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({
+        apiKey: env.GEMINI_API_KEY,
+      });
 
       const movieTitles = movies.map((m) => m.title).join(", ");
 
       const systemInstruction = `
-        You are a movie expert. Based on these movies found in our database: [${movieTitles}], 
-        and the user search query: "${search}", 
-        provide all similar movie titles or trending related topics.
+        You are a movie expert.
+
+        Based on these movies found in our database:
+        [${movieTitles}]
+
+        And the user search query:
+        "${search}"
+
+        Provide similar movie titles or trending related topics.
+
         Return ONLY a plain JSON array of strings.
       `;
 
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: [
-          { role: "user", parts: [{ text: systemInstruction }] },
-          { role: "user", parts: [{ text: `User Question: ${search}` }] },
+          {
+            role: "user",
+            parts: [{ text: systemInstruction }],
+          },
+          {
+            role: "user",
+            parts: [{ text: `User Question: ${search}` }],
+          },
         ],
       });
+
       const text = result.text as string;
+
       const cleanedText = text.replace(/```json|```/g, "").trim();
+
       aiSuggestions = JSON.parse(cleanedText);
     } catch (error) {
       console.error("AI Suggestion Error:", error);
+
       aiSuggestions = [];
     }
   }
@@ -236,6 +297,7 @@ export const allMovies = TryCatch(async (req, res) => {
   sendResponse(res, 200, "Movies fetched successfully", {
     movies,
     aiSuggestions,
+
     pagination: {
       totalMovies,
       totalPages: Math.ceil(totalMovies / limit),
@@ -319,7 +381,7 @@ export const latestMovie = TryCatch(async (req, res, next) => {
     orderBy: {
       createdAt: "desc",
     },
-    take: 5,
+    take: 8,
     include: {
       user: {
         select: {

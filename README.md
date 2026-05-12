@@ -4,7 +4,12 @@ This is the backend server for the Movie Portal application. It is responsible f
 
 ## Key Features
 ### User Authentication
-A secure authentication system built with Better Auth and JWT. It allows users to register, log in, and stay authenticated safely. The system ensures proper session handling and protects user data from unauthorized access.
+A secure authentication system built with Better Auth and JWT. It allows users to register, log in, demo login, and stay authenticated safely. The system ensures proper session handling and protects user data from unauthorized access.
+
+### Customer Support AI Agent
+Chatbot: Easily find any information about our Movie Portal web application by asking the AI agent. Simply open the chat box on the right side of
+the screen, and get instant answers about movies, series, ratings, reviews, and more.
+
 
 ### RBAC (Role-Based Access Control)
 The application supports multiple user roles such as Admin, Creator, and User. Each role has its own set of permissions and access levels, ensuring better security and organized control over different parts of the system.
@@ -40,6 +45,8 @@ Well-structured RESTful APIs are used to connect the frontend and backend, ensur
  Language: TypeScript
  
  Auth: Better-Auth And Jwt
+
+ Ai: Gemini Ai
 
 ## Local Setup
 #### Clone the repository GitHub cli
